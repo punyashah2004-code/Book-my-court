@@ -1,0 +1,100 @@
+{% extends "pickleball/base.html" %}
+{% load static %}
+{% block content %}
+<div id="upiDiv" style="text-align:center; margin-top:40px;"
+     data-status-url="{% url 'payment_status' 0 %}"    
+     data-booking-id="{{ booking_id|default:'' }}">
+    <h2>Scan & Pay via UPI</h2>
+    <p>Amount: ₹{{ amount }}</p>
+
+    <!-- show generated QR (base64) -->
+    <img src="data:image/png;base64,{{ qr_code }}"
+         alt="UPI QR Code"
+         style="width:250px; height:250px; margin:20px;">
+
+    <p id="statusText">Waiting for payment confirmation...</p>
+</div>
+
+<script>
+(function() {
+    // read values from data- attributes (safer than injecting raw numbers)
+    const wrapper = document.getElementById('upiDiv');
+    const bookingIdRaw = wrapper.dataset.bookingId;     // string or empty
+    const statusUrlTemplate = wrapper.dataset.statusUrl; // e.g. "/payment-status/0/"
+
+    const statusText = document.getElementById('statusText');
+
+    if (!bookingIdRaw) {
+        statusText.textContent = 'Error: missing booking id.';
+        console.error('Missing booking_id in template context.');
+        return;
+    }
+
+    // ensure bookingId is numeric (defensive)
+    const bookingId = String(bookingIdRaw).trim();
+    if (!/^\d+$/.test(bookingId)) {
+        statusText.textContent = 'Error: invalid booking id.';
+        console.error('Invalid booking_id:', bookingIdRaw);
+        return;
+    }
+
+    // Build the polling URL from the template URL. The template URL contains "0"
+    // at the position of the id (we produced it using {% url 'payment_status' 0 %}).
+    // Replace the "0" (the last path segment) with the actual id.
+    // Example: "/payment-status/0/" -> "/payment-status/123/"
+    let statusUrl;
+    try {
+        // replace only the final "/0/" segment
+        statusUrl = statusUrlTemplate.replace(/\/0\/?$/, '/' + bookingId + '/');
+    } catch (e) {
+        console.error('Error building statusUrl from template:', e, statusUrlTemplate);
+        statusText.textContent = 'Error preparing payment-status URL.';
+        return;
+    }
+
+    // Polling config
+    const pollIntervalMs = 9000; // every 9 seconds
+    const maxAttempts = 200;     // safety cutoff (~10 minutes)
+    let attempts = 0;
+
+    function checkStatus() {
+        attempts++;
+        fetch(statusUrl, { method: 'GET', credentials: 'same-origin' })
+            .then(resp => {
+                if (!resp.ok) throw new Error('Network response not ok: ' + resp.status);
+                return resp.json();
+            })
+            .then(data => {
+                // expected JSON: { "status": "pending" } or { "status": "paid" }
+                if (data.status === 'paid') {
+                    // Redirect to success page (server-side success handling)
+                    window.location.href = "{% url 'success' %}";
+                    return;
+                }
+
+                if (data.status === 'pending' || data.status === 'pending_payment') {
+                    statusText.textContent = 'Payment pending — waiting for confirmation...';
+                } else {
+                    // show returned status for debugging
+                    statusText.textContent = 'Status: ' + (data.status || 'unknown');
+                }
+            })
+            .catch(err => {
+                console.error('poll error', err);
+                statusText.textContent = 'Waiting for payment confirmation (network)...';
+            });
+
+        if (attempts < maxAttempts) {
+            setTimeout(checkStatus, pollIntervalMs);
+        } else {
+            statusText.textContent = 'Timed out waiting for payment. If you paid, contact support or try again.';
+        }
+    }
+
+    // start polling after a short delay so server has time to initialize state
+    setTimeout(checkStatus, 6000);
+})();
+</script>
+{% endblock %}
+
+

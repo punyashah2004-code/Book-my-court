@@ -1,0 +1,16 @@
+{% extends 'pickleball/base.html' %}
+
+{% block content %}
+<div style="text-align:center; margin-top:40px;">
+    <h2 style="color: green;">🎉 Payment Successful!</h2>
+    <p>Hi {{ booking.name }}, your booking for <b>{{ booking.sport }}</b> at <b>{{ booking.court }}</b></p>
+    <p>Slot: <b>{{ booking.slot }}</b></p>
+    <p>Payment Method: <b>{{ method }}</b></p>
+    <br>
+    <a href="{% url 'court_list' booking.sport %}" 
+       style="padding:10px 20px; background:#007BFF; color:white; border-radius:8px; text-decoration:none;">
+       Back to Courts
+    </a>
+</div>
+{% endblock %}
+

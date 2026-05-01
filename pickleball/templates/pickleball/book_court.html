@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Book Court - {{ court.name }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* small centered card layout */
+    body {
+      background: #f5f6f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    .booking-card {
+      width: 100%;
+      max-width: 720px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 30px rgba(0,0,0,0.08);
+      padding: 26px;
+    }
+
+    .court-title {
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 1.4rem;
+    }
+
+    .small-muted {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    /* make selects and inputs uniform height */
+    .form-control, .form-select, textarea {
+      height: 44px;
+    }
+    textarea.form-control {
+      height: auto;
+      min-height: 88px;
+      resize: vertical;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+
+    .btn-primary {
+      min-width: 140px;
+    }
+
+    .no-slots { color: #b02a37; font-weight: 600; margin-top: 8px; }
+
+    @media (max-width: 520px) {
+      .booking-card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="booking-card">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <div class="court-title">Booking: {{ court.name }}</div>
+        <div class="small-muted">Game: {{ court.game_type }} • Location: {{ court.location }}</div>
+      </div>
+      <div class="text-end">
+        <div class="small-muted">Price</div>
+        <div style="font-weight:700; font-size:1.05rem;">₹{{ court.price }}</div>
+      </div>
+    </div>
+
+    <form method="post" id="bookingForm" novalidate>
+      {% csrf_token %}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Name</label>
+          <input type="text" name="name" class="form-control" required placeholder="Full name">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Phone</label>
+          <!-- Indian 10-digit pattern -->
+          <input type="tel" name="phone" id="phone" class="form-control" required
+                 pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile number (6-9...)">
+          <div class="form-text">Enter 10-digit mobile number starting with 6-9.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" required placeholder="you@example.com">
+        </div>
+
+        <!-- Day select: JS will populate and preselect using selected_date -->
+        <div class="col-md-6">
+          <label class="form-label">Day</label>
+          <select name="day" id="daySelect" class="form-select" required>
+            <option value="">Choose a day</option>
+          </select>
+        </div>
+
+        <!-- Server-rendered slot select: disabled options if booked -->
+        <div class="col-md-6">
+          <label class="form-label">Slot</label>
+          <select name="slot" id="slotSelect" class="form-select" required>
+            <option value="">Select a time slot</option>
+            {% for slot in slots %}
+              {% if slot in booked_slots %}
+                <option value="{{ slot }}" disabled>{{ slot }} — Not available</option>
+              {% else %}
+                <option value="{{ slot }}">{{ slot }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+
+          {% comment %}
+            Show a helpful message if all slots are booked for the selected date.
+            This message will be updated client-side as the day changes.
+          {% endcomment %}
+          <div id="noSlotsMsg" class="no-slots" style="display:none;">
+            Sorry — no slots are available on this day. Please choose another day.
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Address</label>
+          <textarea name="address" class="form-control" placeholder="Your address (optional)"></textarea>
+        </div>
+
+      </div> <!-- row -->
+
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <a href="{% url 'court_list' court.game_type %}" class="btn btn-outline-secondary">Back to list</a>
+        <button type="submit" class="btn btn-primary">Proceed to Confirm</button>
+      </div>
+    </form>
+
+    <!-- client-side validation + populate days + dynamic slot disabling -->
+    <script>
+    (function () {
+      const daySelect = document.getElementById('daySelect');
+      const slotSelect = document.getElementById('slotSelect');
+      const noSlotsMsg = document.getElementById('noSlotsMsg');
+
+      // selected_date from view (YYYY-MM-DD) — may be empty
+      const preselected = "{{ selected_date|date:'Y-m-d'|default:'' }}";
+
+      const today = new Date();
+      const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+      // booked slots map: mapping date->list of booked slots (if you want to support per-date booked slots client-side,
+      // you would need to pass a structure from view. For now we assume booked_slots in context applies to selected_date.)
+      // server-side already disabled booked options for the initial selected_date.
+
+      // Populate next 7 days
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const value = `${yyyy}-${mm}-${dd}`;
+        const label = `${dayNames[d.getDay()]} ${dd}-${mm}-${yyyy}`;
+
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+
+        if (preselected && preselected === value) opt.selected = true;
+
+        daySelect.appendChild(opt);
+      }
+
+      // When the selected day changes we need to update slots availability.
+      // NOTE: currently the view only passed booked_slots for the initial selected_date.
+      // For full dynamic per-day slot disabling you should call an endpoint (Ajax) to return booked slots for the chosen date.
+      // Here we do a simple UX: if the user changed the day, we submit the page with ?date=YYYY-MM-DD to reload server availability.
+      daySelect.addEventListener('change', function () {
+        const chosen = this.value;
+        if (!chosen) return;
+        // reload the page with ?date=YYYY-MM-DD so the view can recompute booked_slots and re-render the template
+        const url = new URL(window.location.href);
+        url.searchParams.set('date', chosen);
+        // keep path (same page), trigger a GET to refresh available slots for that date
+        window.location.href = url.toString();
+      });
+
+      // client-side phone validation & ensure slot chosen
+      document.getElementById('bookingForm').addEventListener('submit', function (e) {
+        const phone = document.getElementById('phone');
+        const phoneVal = phone.value.trim();
+        const phoneRegex = /^[6-9][0-9]{9}$/;
+
+        if (!phoneRegex.test(phoneVal)) {
+          e.preventDefault();
+          phone.focus();
+          alert('Please enter a valid 10-digit Indian mobile number starting with 6-9.');
+          return false;
+        }
+
+        // ensure slot selected and not disabled
+        const slotValue = slotSelect.value;
+        if (!slotValue) {
+          e.preventDefault();
+          alert('Please select a time slot.');
+          slotSelect.focus();
+          return false;
+        }
+
+        // if chosen option is disabled (shouldn't happen with a proper browser), block submission
+        const chosenOpt = slotSelect.selectedOptions[0];
+        if (chosenOpt && chosenOpt.disabled) {
+          e.preventDefault();
+          alert('Selected slot is not available. Choose another slot.');
+          return false;
+        }
+
+        return true;
+      });
+
+      // If all options are disabled, show the "no slots" message
+      function evaluateSlotAvailability() {
+        let anyAvailable = false;
+        for (let i = 0; i < slotSelect.options.length; i++) {
+          const opt = slotSelect.options[i];
+          if (opt.value && !opt.disabled) {
+            anyAvailable = true;
+            break;
+          }
+        }
+        noSlotsMsg.style.display = anyAvailable ? 'none' : 'block';
+        // if none available, disable submit button
+        document.querySelector('button[type="submit"]').disabled = !anyAvailable;
+      }
+
+      // run once on load
+      evaluateSlotAvailability();
+    })();
+    </script>
+
+  </div>
+
+  <!-- bootstrap js (optional behaviour if needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

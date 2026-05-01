@@ -1,0 +1,69 @@
+{% extends "pickleball/base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Admin Dashboard</h1>
+    <hr>
+
+    <h2>Manage Courts</h2>
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Game Type</th>
+                <th>City</th>
+                <th>Price</th>
+                <th>Available</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for court in courts %}
+            <tr>
+                <td>{{ court.name }}</td>
+                <td>{{ court.game_type }}</td>
+                <td>{{ court.city }}</td>
+                <td>{{ court.price }}</td>
+                <td>
+                    {% if court.is_available %}
+                        ✅ Available
+                    {% else %}
+                        ❌ Unavailable
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'toggle_court' court.id %}" class="btn btn-sm btn-warning">
+                        Toggle Availability
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2 class="mt-5">Recent Bookings</h2>
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>User</th>
+                <th>Court</th>
+                <th>Slot</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td>{{ booking.name }}</td>
+                <td>{{ booking.court.name }}</td>
+                <td>{{ booking.time_slot }}</td>
+                <td>{{ booking.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">No bookings yet</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

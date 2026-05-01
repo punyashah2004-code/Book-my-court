@@ -1,0 +1,115 @@
+{% extends 'pickleball/base.html' %}
+{% block content %}
+<div class="courts-container">
+    <h2>Available Courts</h2>
+
+    <table class="courts-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Game</th>
+                <th>Location</th>
+                <th>Price (₹)</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for court in courts %}
+            <tr class="{% if not court.is_available %}unavailable{% endif %}">
+                <td>{{ court.name }}</td>
+                <td>{{ court.game_type }}</td>
+                <td>{{ court.location }}</td>
+                <td>{{ court.price }}</td>
+                <td>
+                    {% if court.is_available %}
+                        ✅ Available
+                    {% else %}
+                        ❌ Unavailable
+                    {% endif %}
+                </td>
+                <td>
+                    {% if court.is_available %}
+                        <a href="{% url 'book_court' court.id %}" class="btn-book">Book Now</a>
+                    {% else %}
+                        <button disabled class="btn-disabled">Not Available</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align:center;">No courts found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.courts-container {
+    margin: 20px;
+    overflow-x: auto;
+}
+
+.courts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    
+}
+
+.courts-table th, 
+.courts-table td {
+    padding: 12px 15px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.courts-table th {
+    background-color: #222;
+    color: #fff;
+    font-weight: bold;
+}
+
+.courts-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.courts-table tr.unavailable {
+    background-color: #f0f0f0;
+    color: #999;
+}
+
+.btn-book {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #007BFF;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.btn-book:hover {
+    background-color: #0056b3;
+}
+
+.btn-disabled {
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #ccc;
+    color: #666;
+    border: none;
+}
+h2 {
+        text-align: center;
+        font-size: 48px;
+        margin-bottom: 40px;
+        font-weight: bold;
+        color: rgb(255, 255, 255);
+    } 
+</style>
+{% endblock %}

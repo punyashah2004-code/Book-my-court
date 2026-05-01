@@ -1,0 +1,110 @@
+{% extends 'pickleball/base.html' %}
+{% load static %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: url("{% static 'images/homepg.jpg' %}") no-repeat center center fixed;
+        background-size: cover;
+        font-family: Arial, sans-serif;
+    }
+
+    .form-container {
+        width: 350px;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+
+        /* Centering the box */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .form-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-container input {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 6px;
+        border: 1px solid #aaa;
+    }
+
+    .form-container button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 6px;
+        background: #007bff;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .form-container button:hover {
+        background: #0056b3;
+    }
+
+    .error {
+        color: red;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .form-container p {
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .form-container a {
+        color: #007bff;
+        text-decoration: none;
+    }
+</style>
+
+<script>
+function validateLogin() {
+    let username = document.getElementById("username").value.trim();
+    let pass = document.getElementById("password").value.trim();
+    let error = "";
+
+    
+    if (pass.length < 6) error += "Password must be at least 6 characters.<br>";
+
+    document.getElementById("login-error").innerHTML = error;
+
+    return error === "";
+}
+</script>
+
+<div class="form-container">
+    <h2>Login</h2>
+
+    <form method="POST" onsubmit="return validateLogin()">
+        {% csrf_token %}
+        <input type="username" id="username" name="username" placeholder="Username">
+        <input type="password" id="password" name="password" placeholder="Password">
+
+        <div id="login-error" class="error"></div>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <p>
+        Don't have an account?
+        <a href="{% url 'register' %}">Register</a>
+    </p>
+</div>
+
+{% endblock %}

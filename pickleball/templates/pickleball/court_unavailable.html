@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Court Not Available</title>
+</head>
+<body>
+    <h2>❌ {{ court.name }} is not available right now.</h2>
+    <p>📍 Location: {{ court.location }}</p>
+    <a href="{% url 'court_list' court.game_type %}">🔙 Back to Courts</a>
+</body>
+</html>

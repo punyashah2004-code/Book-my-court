@@ -1,0 +1,115 @@
+{% extends 'pickleball/base.html' %}
+{% load static %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: url("{% static 'images/homepg.jpg' %}") no-repeat center center fixed;
+        background-size: cover;
+        font-family: Arial, sans-serif;
+    }
+
+    .form-container {
+        width: 380px;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .form-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-container input {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 6px;
+        border: 1px solid #aaa;
+    }
+
+    .form-container button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 6px;
+        background: #28a745;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .form-container button:hover {
+        background: #1e7e34;
+    }
+
+    .error {
+        color: red;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .form-container p {
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .form-container a {
+        color: #007bff;
+        text-decoration: none;
+    }
+</style>
+
+<script>
+function validateRegister() {
+    let name = document.getElementById("name").value.trim();
+    let email = document.getElementById("email").value.trim();
+    let phone = document.getElementById("phone").value.trim();
+    let password = document.getElementById("password").value.trim();
+    let error = "";
+
+    if (name.length < 3) error += "Name must be at least 3 letters.<br>";
+    if (!email.includes("@")) error += "Enter a valid email.<br>";
+    if (!/^[6-9]\d{9}$/.test(phone)) error += "Enter a valid 10-digit phone number starting with 6–9.<br>";
+    if (password.length < 6) error += "Password must be minimum 6 characters.<br>";
+
+    document.getElementById("register-error").innerHTML = error;
+
+    return error === "";
+}
+</script>
+
+<div class="form-container">
+    <h2>Create Account</h2>
+
+    <form method="POST" onsubmit="return validateRegister()">
+        {% csrf_token %}
+        <input type="text" id="username" name="username" placeholder="Full Name">
+        <input type="email" id="email" name="email" placeholder="Email Address">
+        <input type="text" id="phone" name="phone" placeholder="Phone Number">
+        <input type="password" id="password" name="password" placeholder="Password">
+
+        <div id="register-error" class="error"></div>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p>
+        Already have an account?
+        <a href="{% url 'login' %}">Login</a>
+    </p>
+</div>
+
+{% endblock %}
